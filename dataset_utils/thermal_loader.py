@@ -81,6 +81,6 @@ class ThermalDataset(data.Dataset):
         return image_list, label_list
 
     def _encode_label(self, label):
-        label_mapping = dict(zip(self.class_list, np.arange(self.num_classes)))
+        label_map = dict(zip(self.class_list, np.arange(self.num_classes)))
 
-        return np.vectorize(label_mapping.get)(label)
+        return np.vectorize(label_map.get)(label)

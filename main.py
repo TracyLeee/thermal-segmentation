@@ -4,7 +4,8 @@ import sys
 
 import torch
 
-from datasets.transforms import *
+from dataset_utils.transforms import *
+from tester import Tester
 from trainer import Trainer
 
 
@@ -137,6 +138,17 @@ def parse_arguments():
         action="store_true",
         help="whether to resume training ({ckpt} must be provided if set true)",
     )
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="whether to test the model ({ckpt} must be provided if set true)",
+    )
+    parser.add_argument(
+        "--seg-results-directory",
+        type=str,
+        default="seg_results",
+        help="directory to save segmentation results",
+    )
 
     return parser.parse_args()
 
@@ -168,19 +180,32 @@ def main():
             RandomCrop(size=(512, 512), rand_gen=rand_gen),
             RandomHorizontalFlip(prob=0.5, rand_gen=rand_gen),
             ToTensor(),
-            Normalize(mean=[0.3135906133471105, 0.3135906133471105, 0.3135906133471105], std=[0.06519744939510239, 0.06519744939510239, 0.06519744939510239]),
+            Normalize(
+                mean=[0.3135906133471105, 0.3135906133471105, 0.3135906133471105],
+                std=[0.06519744939510239, 0.06519744939510239, 0.06519744939510239],
+            ),
         ]
     )
 
     val_transform = Compose(
         [
             ToTensor(),
-            Normalize(mean=[0.3135906133471105, 0.3135906133471105, 0.3135906133471105], std=[0.06519744939510239, 0.06519744939510239, 0.06519744939510239]),
+            Normalize(
+                mean=[0.3135906133471105, 0.3135906133471105, 0.3135906133471105],
+                std=[0.06519744939510239, 0.06519744939510239, 0.06519744939510239],
+            ),
         ]
     )
 
-    config["train_trans"] = train_transform
-    config["val_trans"] = val_transform
+    test_transform = Compose(
+        [
+            ToTensor(),
+            Normalize(
+                mean=[0.3135906133471105, 0.3135906133471105, 0.3135906133471105],
+                std=[0.06519744939510239, 0.06519744939510239, 0.06519744939510239],
+            ),
+        ]
+    )
 
     config["optim"] = dict()
     config["optim"]["optimizer"] = args.optimizer
@@ -195,13 +220,54 @@ def main():
 
     config["loss_fn"] = args.loss_fn
 
+    config["class_def"] = {
+        0: {"name": "undefined", "color": (0, 0, 0)},
+        7: {"name": "road", "color": (128, 64, 128)},
+        8: {"name": "sidewalk", "color": (244, 35, 232)},
+        11: {"name": "building", "color": (70, 70, 70)},
+        12: {"name": "wall", "color": (102, 102, 156)},
+        13: {"name": "fense", "color": (190, 153, 153)},
+        17: {"name": "pole", "color": (153, 153, 153)},
+        19: {"name": "traffic light", "color": (250, 170, 30)},
+        20: {"name": "traffic sign", "color": (220, 220, 0)},
+        21: {"name": "vegetation", "color": (107, 142, 35)},
+        22: {"name": "terrain", "color": (152, 251, 152)},
+        23: {"name": "sky", "color": (70, 130, 180)},
+        24: {"name": "person", "color": (220, 20, 60)},
+        25: {"name": "rider", "color": (255, 0, 0)},
+        26: {"name": "car", "color": (0, 0, 142)},
+        27: {"name": "truck", "color": (0, 0, 70)},
+        28: {"name": "bus", "color": (0, 60, 100)},
+        31: {"name": "train", "color": (0, 80, 100)},
+        32: {"name": "motorcycle", "color": (0, 0, 230)},
+        33: {"name": "bicycle", "color": (119, 11, 32)},
+    }
+    config["class_list"] = list(config["class_def"].keys())
+
+    config["class_blue_map"] = dict()
+    config["class_green_map"] = dict()
+    config["class_red_map"] = dict()
+    for class_id, class_info in config["class_def"].items():
+        config["class_blue_map"][class_id] = class_info["color"][2]
+        config["class_green_map"][class_id] = class_info["color"][1]
+        config["class_red_map"][class_id] = class_info["color"][0]
+
     config["immutable"] = dict()
     config["immutable"]["ckpt_directory"] = args.ckpt_directory
     config["immutable"]["ckpt"] = args.ckpt
     config["immutable"]["resume"] = args.resume
+    config["immutable"]["test"] = args.test
+    config["immutable"]["seg_results_directory"] = args.seg_results_directory
 
-    model = Trainer(config)
-    model.train()
+    if args.test:
+        config["test_trans"] = test_transform
+        model = Tester(config)
+        model.test()
+    else:
+        config["train_trans"] = train_transform
+        config["val_trans"] = val_transform
+        model = Trainer(config)
+        model.train()
 
 
 if __name__ == "__main__":

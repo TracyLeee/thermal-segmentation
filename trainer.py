@@ -7,7 +7,7 @@ from torch.utils import data
 from torchvision.models.segmentation import deeplabv3_resnet50
 from tqdm import tqdm
 
-from datasets.thermal_loader import ThermalDataset
+from dataset_utils.thermal_loader import ThermalDataset
 from metrics.evaluation import SegmentMetricLoss, SegmentMetrics
 
 
@@ -29,6 +29,7 @@ class Trainer(object):
 
         self.name = self.config["name"]
 
+        self.class_list = self.config["class_list"]
         self.num_classes = self.config["num_classes"]
         self.batch_size = self.config["batch_size"]
         self.val_batch_size = self.config["val_batch_size"]
@@ -54,7 +55,7 @@ class Trainer(object):
             shuffle=True,
             num_workers=self.config["num_workers"],
         )
-        
+
         # torch._C.Generator object cannot be deepcopied...
         # This could be a feature expected to be added later in pytorch
         # https://github.com/pytorch/pytorch/issues/43672
