@@ -13,6 +13,8 @@ class RandomCrop(object):
         if isinstance(size, int):
             self.size = (size, size)
         elif (
+            # collections.Iterable has been deprecated since version 3.10
+            # collections.abc.Iterable was introduced in version 3.3
             isinstance(size, collections.abc.Iterable)
             and len(size) == 2
             and isinstance(size[0], int)
@@ -85,6 +87,8 @@ class ColorJitter(object):
         if range is None:
             return range
         elif (
+            # collections.Iterable has been deprecated since version 3.10
+            # collections.abc.Iterable was introduced in version 3.3
             isinstance(range, collections.abc.Iterable)
             and len(range) == 2
             and isinstance(range[0], float)

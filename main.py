@@ -72,12 +72,6 @@ def parse_arguments():
         default=0,
         help="seed for random number generator",
     )
-    parser.add_argument(
-        "--num-classes",
-        type=int,
-        default=20,
-        help="number of classes for segmentation",
-    )
 
     if sys.version_info >= (3, 9):
         # argparse.BooleanOptionalAction is a new feature in version 3.9
@@ -169,7 +163,6 @@ def main():
     config["info_interval"] = args.info_interval
     config["val_interval"] = args.val_interval
     config["num_workers"] = args.num_workers
-    config["num_classes"] = args.num_classes
     config["drop_last"] = args.drop_last
 
     rand_gen = torch.Generator()
@@ -191,8 +184,8 @@ def main():
         [
             ToTensor(),
             Normalize(
-                mean=[0.3135906133471105, 0.3135906133471105, 0.3135906133471105],
-                std=[0.06519744939510239, 0.06519744939510239, 0.06519744939510239],
+                mean=[0.3304213428873094, 0.3304213428873094, 0.3304213428873094],
+                std=[0.057050643620181946, 0.057050643620181946, 0.057050643620181946],
             ),
         ]
     )
@@ -201,8 +194,8 @@ def main():
         [
             ToTensor(),
             Normalize(
-                mean=[0.3135906133471105, 0.3135906133471105, 0.3135906133471105],
-                std=[0.06519744939510239, 0.06519744939510239, 0.06519744939510239],
+                mean=[0.3304213428873094, 0.3304213428873094, 0.3304213428873094],
+                std=[0.057050643620181946, 0.057050643620181946, 0.057050643620181946],
             ),
         ]
     )
@@ -243,6 +236,7 @@ def main():
         33: {"name": "bicycle", "color": (119, 11, 32)},
     }
     config["class_list"] = list(config["class_def"].keys())
+    config["num_classes"] = len(config["class_def"])
 
     config["class_blue_map"] = dict()
     config["class_green_map"] = dict()
@@ -251,6 +245,22 @@ def main():
         config["class_blue_map"][class_id] = class_info["color"][2]
         config["class_green_map"][class_id] = class_info["color"][1]
         config["class_red_map"][class_id] = class_info["color"][0]
+
+    config["color_palette"] = {
+        "undefined/curb": (0, 0, 0),
+        "road/parking": (128 / 255, 64 / 255, 128 / 255),
+        "sidewalk": (244 / 255, 35 / 255, 232 / 255),
+        "building": (70 / 255, 70 / 255, 70 / 255),
+        "fense": (190 / 255, 153 / 255, 153 / 255),
+        "pole/signs": (153 / 255, 153 / 255, 153 / 255),
+        "vegetation": (107 / 255, 142 / 255, 35 / 255),
+        "terrain": (152 / 255, 251 / 255, 152 / 255),
+        "sky": (70 / 255, 130 / 255, 180 / 255),
+        "person/rider": (220 / 255, 20 / 255, 60 / 255),
+        "car/truck/bus/train": (0, 0, 142 / 255),
+        "motorcycle/bicycle": (0, 0, 230 / 255),
+        "wall/background": (102 / 255, 102 / 255, 156 / 255),
+    }
 
     config["immutable"] = dict()
     config["immutable"]["ckpt_directory"] = args.ckpt_directory

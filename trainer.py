@@ -234,7 +234,6 @@ class Trainer(object):
                 predictions = outputs.detach().max(dim=1)[1].cpu().numpy()
                 labels = labels.cpu().numpy()
 
-                # (1, 1400, 650) --> (1400, 650)?
                 self.metrics.update(labels, predictions, loss, self.val_batch_size)
 
             overall_iou = self.metrics.overall_iou

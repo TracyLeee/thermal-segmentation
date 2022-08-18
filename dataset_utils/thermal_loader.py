@@ -7,10 +7,7 @@ from torch.utils import data
 
 
 class ThermalDataset(data.Dataset):
-    """Dataset for thermal images
-
-    :param data: _description_
-    """
+    """Dataset for thermal images"""
 
     def __init__(self, root, split="train", transform=None):
         self.root = root
@@ -76,7 +73,6 @@ class ThermalDataset(data.Dataset):
             label_list.append(
                 os.path.join(self.label_dir, f"fl_ir_aligned_labels_{data_id}")
             )
-            # label_list.append(os.path.join(self.label_dir, f"fl_ir_aligned_{data_id}"))
 
         return image_list, label_list
 

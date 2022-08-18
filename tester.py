@@ -18,7 +18,6 @@ class Tester(object):
 
         self.ckpt_directory = self.config["immutable"]["ckpt_directory"]
         self.ckpt = self.config["immutable"]["ckpt"]
-        self.resume = self.config["immutable"]["resume"]
 
         self.net = None
         self.loss_fn = None
@@ -51,10 +50,18 @@ class Tester(object):
 
         self.metrics = SegmentMetrics(np.arange(self.num_classes))
 
-        if not os.path.exists(self.config["immutable"]["seg_results_directory"]):
-            os.mkdir(self.config["immutable"]["seg_results_directory"])
-        
-        self.seg_results_directory = os.path.join(self.config["immutable"]["seg_results_directory"], self.name)
+        self.seg_results_directory = self.config["immutable"]["seg_results_directory"]
+        if not os.path.exists(
+            os.path.dirname(os.path.abspath(self.seg_results_directory))
+        ):
+            raise ValueError("Parent directory of segmentation results does not exist!")
+
+        if not os.path.exists(self.seg_results_directory):
+            os.mkdir(self.seg_results_directory)
+
+        self.seg_results_directory = os.path.join(
+            self.config["immutable"]["seg_results_directory"], self.name
+        )
         if not os.path.exists(self.seg_results_directory):
             os.mkdir(self.seg_results_directory)
 
@@ -89,7 +96,7 @@ class Tester(object):
         label_map = dict(zip(np.arange(self.num_classes), self.class_list))
 
         return np.vectorize(label_map.get)(label)
-    
+
     def _visualize_label(self, label):
         colored_label = np.empty((*label.shape, 3))
         colored_label[..., 0] = np.vectorize(self.config["class_blue_map"].get)(label)
@@ -97,7 +104,7 @@ class Tester(object):
         colored_label[..., 2] = np.vectorize(self.config["class_red_map"].get)(label)
 
         return colored_label
-    
+
     def _visualize_results(self, labels, idx):
         batch_size = labels.shape[0]
 
@@ -106,16 +113,28 @@ class Tester(object):
             label = self._decode_label(label)
             colored_label = self._visualize_label(label)
             label_filename = os.path.basename(self.test_set.label_list[idx + i])
-            
-            _, ax = plt.subplots()
-            plt.imshow(colored_label)
-            patch_gen = lambda label, color: mpatches.Patch(label=label, color=color)
-            ax.legend(handles=[patch_gen(label, color) for label, color in self.config["color_palette"].items()])
-            ax.set_axis_off()
-            plt.savefig(os.path.join(self.seg_results_directory, label_filename))
-        
-        return idx + batch_size
 
+            _, ax = plt.subplots()
+            # convert BGR (opencv) to RGB (matplotlib)
+            colored_label = np.flip(colored_label, axis=-1)
+            plt.imshow(colored_label.astype(np.uint8))
+            patch_gen = lambda label, color: mpatches.Patch(label=label, color=color)
+            ax.legend(
+                handles=[
+                    patch_gen(label, color)
+                    for label, color in self.config["color_palette"].items()
+                ],
+                loc="center left",
+                bbox_to_anchor=(1, 0.5),
+            )
+            ax.set_axis_off()
+            plt.savefig(
+                os.path.join(self.seg_results_directory, label_filename),
+                bbox_inches="tight",
+            )
+            plt.close()
+
+        return idx + batch_size
 
     def _test(self):
         self.net.eval()
@@ -144,6 +163,6 @@ class Tester(object):
             avg_loss = self.metrics.avg_loss
 
             print(f"IoU: {overall_iou}, ACC: {overall_acc}, loss: {avg_loss}")
-    
+
     def test(self):
         self._test()
